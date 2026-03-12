@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>宝可梦词语对战</title>
+  <style>
+    :root{
+      --bg:#152741;
+      --ink:#233350;
+      --soft:#6d7a90;
+      --line:#3a4963;
+      --blue:#4f8fff;
+      --blue-deep:#356bd8;
+      --green:#39c66f;
+      --green-deep:#22a757;
+      --yellow:#f3c94f;
+      --red:#f06565;
+      --panel:#f5f8fc;
+      --panel-2:#eaf0f7;
+      --shadow:0 20px 46px rgba(0,0,0,.28);
+      --font-cn:"Noto Sans SC","PingFang SC","Microsoft YaHei","Heiti SC",sans-serif;
+      --font-en:"Trebuchet MS","Segoe UI",Arial,sans-serif;
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      background:
+        radial-gradient(circle at 18% 14%, rgba(118,176,255,.18), transparent 26%),
+        radial-gradient(circle at 82% 10%, rgba(105,255,210,.12), transparent 24%),
+        linear-gradient(180deg, #1b2f4d 0%, #122038 100%);
+      font-family:var(--font-cn);
+      color:var(--ink);
+    }
+
+    body{
+      display:grid;
+      place-items:start center;
+      padding:10px;
+      overflow:hidden;
+    }
+
+    .app{
+      width:min(100%, 1140px);
+      display:grid;
+      gap:16px;
+      justify-items:center;
+      transform:scale(0.75);
+      transform-origin:top center;
+    }
+
+    .title{
+      color:#f5fbff;
+      font-size:clamp(24px, 2.2vw, 34px);
+      font-weight:900;
+      letter-spacing:1px;
+      text-shadow:0 3px 0 rgba(0,0,0,.22);
+      display:flex;
+      align-items:center;
+      gap:12px;
+      text-align:center;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    .battle-frame{
+      width:min(100%, 980px);
+      aspect-ratio:14 / 10;
+      min-height:790px;
+      position:relative;
+      border-radius:34px;
+      padding:18px;
+      overflow:hidden;
+      isolation:isolate;
+      background:
+        linear-gradient(180deg, rgba(126,209,255,.18), rgba(255,255,255,0) 18%),
+        linear-gradient(180deg, #2d446f 0%, #1d3152 100%);
+      border:4px solid rgba(255,255,255,.08);
+      box-shadow:
+        0 24px 70px rgba(0,0,0,.34),
+        inset 0 1px 0 rgba(255,255,255,.14);
+    }
+
+    .battle-frame::before{
+      content:"";
+      position:absolute;
+      inset:18px;
+      border-radius:26px;
+      z-index:0;
+      background:
+        radial-gradient(circle at 50% 12%, rgba(255,255,255,.16), transparent 20%),
+        linear-gradient(180deg, #93e1ff 0%, #79d9d1 36%, #62dc8a 100%);
+      box-shadow:inset 0 2px 0 rgba(255,255,255,.36);
+    }
+
+    .battle-frame::after{
+      content:"";
+      position:absolute;
+      left:18px;
+      right:18px;
+      bottom:18px;
+      height:26%;
+      border-radius:0 0 26px 26px;
+      z-index:0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.10), transparent 10%),
+        linear-gradient(180deg, #f1f4f8 0%, #e7edf5 100%);
+      box-shadow:inset 0 3px 0 rgba(255,255,255,.5);
+    }
+
+    .scene{
+      position:relative;
+      z-index:2;
+      width:100%;
+      height:100%;
+      display:grid;
+      grid-template-rows:68% 32%;
+      gap:0;
+      padding-bottom:0;
+    }
+
+    .arena{
+      position:relative;
+      height:100%;
+      min-height:0;
+      overflow:hidden;
+      border-radius:22px 22px 0 0;
+    }
+
+    .arena-sky{
+      position:absolute;
+      inset:0;
+      z-index:0;
+      background:
+        radial-gradient(circle at 50% 14%, rgba(255,255,255,.22), transparent 17%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 16%),
+        linear-gradient(180deg, #96e3ff 0%, #6ed8cb 40%, #5adf87 100%);
+    }
+
+    .platform{
+      position:absolute;
+      border-radius:50%;
+      z-index:1;
+      filter:blur(.15px);
+    }
+
+    .enemy-platform{
+      width:250px;
+      height:78px;
+      right:92px;
+      top:180px;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(102,236,141,.94), rgba(52,202,112,.88) 54%, rgba(46,184,99,.80) 72%, rgba(46,184,99,.22) 100%);
+      transform:perspective(220px) rotateX(65deg);
+      opacity:.86;
+    }
+
+    .player-platform{
+      width:320px;
+      height:98px;
+      left:70px;
+      bottom:40px;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(78,228,115,.90), rgba(50,210,98,.88) 56%, rgba(35,183,82,.80) 74%, rgba(35,183,82,.18) 100%);
+      transform:perspective(250px) rotateX(65deg);
+      opacity:.92;
+    }
+
+    .floor-line{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      height:12px;
+      z-index:3;
+      background:#1ea255;
+      border-top:4px solid rgba(0,0,0,.12);
+      box-shadow:0 -3px 0 rgba(255,255,255,.22) inset;
+    }
+
+    .status-card{
+      position:absolute;
+      min-height:100px;
+      padding:14px 16px 12px;
+      z-index:7;
+      border-radius:18px;
+      border:5px solid #394760;
+      background:linear-gradient(180deg,#fcfcfa 0%, #efefe6 100%);
+      box-shadow:
+        0 8px 0 rgba(49,60,84,.20),
+        inset 0 2px 0 rgba(255,255,255,.75);
+    }
+
+    .status-card.enemy{
+      width:320px;
+      top:50px;
+      left:38px;
+      background:linear-gradient(180deg,#f9fbff 0%, #ecf1f7 100%);
+      animation:floatSoft 3.4s ease-in-out infinite;
+    }
+
+    .status-card.player{
+      width:365px;
+      right:44px;
+      bottom:80px;
+      background:linear-gradient(180deg,#f9fbff 0%, #ecf1f7 100%);
+      animation:floatSoft 3.8s ease-in-out infinite;
+    }
+
+    .status-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+    }
+
+    .status-name{
+      max-width:72%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:22px;
+      font-weight:900;
+      color:#1f2b43;
+    }
+
+    .status-level{
+      font-size:17px;
+      font-weight:900;
+      color:#6c758a;
+      flex-shrink:0;
+    }
+
+    .hp-row{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      margin-top:10px;
+    }
+
+    .hp-label{
+      font-weight:900;
+      font-size:16px;
+      color:#cb9425;
+    }
+
+    .hp-track{
+      position:relative;
+      height:20px;
+      padding:3px;
+      border-radius:999px;
+      background:#2a364e;
+      overflow:hidden;
+      box-shadow:inset 0 2px 0 rgba(255,255,255,.14), inset 0 -2px 0 rgba(0,0,0,.15);
+    }
+
+    .hp-fill{
+      height:100%;
+      width:100%;
+      border-radius:999px;
+      background:linear-gradient(180deg,#38d56f 0%, #1eb857 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.42);
+      transition:width .52s cubic-bezier(.22,.8,.18,1), background .3s ease;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hp-fill.mid{ background:linear-gradient(180deg,#f8d148 0%, #f2b738 100%); }
+    .hp-fill.low{ background:linear-gradient(180deg,#ff7b6c 0%, #ef5246 100%); }
+
+    .hp-fill::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.26), rgba(255,255,255,0));
+      transform:translateX(-100%);
+      animation:hpShine 2.2s linear infinite;
+      opacity:.65;
+    }
+
+    .hp-numbers{
+      font-size:15px;
+      font-weight:900;
+      color:#535f77;
+      min-width:60px;
+      text-align:right;
+    }
+
+    .monster{
+      position:absolute;
+      z-index:6;
+      transform-origin:center bottom;
+      transition:transform .28s ease, filter .28s ease, opacity .3s ease;
+      pointer-events:none;
+      user-select:none;
+    }
+
+    .monster img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+      filter:drop-shadow(0 18px 14px rgba(0,0,0,.22));
+    }
+
+    .monster.enemy{
+      width:230px;
+      height:230px;
+      right:98px;
+      top:10px;
+      animation:bobEnemy 3.2s ease-in-out infinite;
+    }
+
+    .monster.player{
+      width:220px;
+      height:220px;
+      left:130px;
+      bottom:38px;
+      animation:bobPlayer 3.7s ease-in-out infinite;
+    }
+
+    .monster.loading img{ opacity:0; }
+
+    .fallback-avatar{
+      width:100%;
+      height:100%;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      font-size:72px;
+      border-radius:24px;
+      border:4px solid rgba(56,72,103,.35);
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,.4), transparent 20%),
+        linear-gradient(135deg,#d5e4ff,#b8c8ff);
+      box-shadow:inset 0 3px 0 rgba(255,255,255,.5);
+    }
+
+    .monster.use-fallback img{ display:none; }
+    .monster.use-fallback .fallback-avatar{ display:flex; }
+
+    .floating-text{
+      position:absolute;
+      z-index:20;
+      font-size:28px;
+      font-weight:900;
+      pointer-events:none;
+      opacity:0;
+      transform:translateY(0) scale(.9);
+      text-shadow:0 2px 0 rgba(255,255,255,.75), 0 4px 12px rgba(0,0,0,.18);
+    }
+
+    .floating-text.good{ color:#1fbf63; }
+    .floating-text.bad{ color:#ef5454; }
+    .floating-text.note{ color:#3976dc; }
+    .floating-text.show{ animation:floatDamage 1.05s ease forwards; }
+
+    .impact-ring{
+      position:absolute;
+      z-index:16;
+      width:24px;
+      height:24px;
+      border-radius:999px;
+      border:4px solid rgba(255,255,255,.9);
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .impact-ring.show{ animation:impactBurst .46s ease forwards; }
+
+    .screen-flash{
+      position:absolute;
+      inset:0;
+      z-index:16;
+      pointer-events:none;
+      background:white;
+      opacity:0;
+    }
+
+    .screen-flash.show{ animation:screenFlash .32s ease; }
+
+    .dialogue-panel{
+      position:relative;
+      z-index:9;
+      border-radius:0 0 22px 22px;
+      padding:12px 16px 10px;
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:10px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.10), transparent 10%),
+        linear-gradient(180deg, #f1f4f8 0%, #e7edf5 100%);
+      margin-bottom:0;
+    }
+
+    .dialogue-box{
+      min-height:58px;
+      display:flex;
+      align-items:center;
+      line-height:1.42;
+      font-size:23px;
+      font-weight:900;
+      color:#27344f;
+      letter-spacing:.2px;
+      padding:0 4px;
+      background:transparent;
+    }
+
+    .wild-name{
+      color:#e65b60;
+      text-shadow:0 1px 0 rgba(255,255,255,.18);
+    }
+
+    .hint-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 8px;
+      padding:6px 12px;
+      border-radius:10px;
+      background:linear-gradient(180deg,#ffffff 0%, #eef5ff 100%);
+      border:3px solid #c7cfdb;
+      color:#355db5;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+      font-family:var(--font-en);
+      font-weight:900;
+      font-size:23px;
+    }
+
+    .battle-ui-row{
+      display:grid;
+      grid-template-columns:1fr 164px;
+      gap:14px;
+      align-items:stretch;
+      min-height:0;
+    }
+
+    .choices-wrap{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      align-content:start;
+    }
+
+    .choice-btn{
+      border:none;
+      cursor:pointer;
+      min-height:62px;
+      border-radius:18px;
+      padding:10px 12px;
+      background:linear-gradient(180deg,#ffffff 0%, #f2f6fb 100%);
+      border:5px solid #d2dceb;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.88),
+        0 6px 0 rgba(86,102,135,.10);
+      color:#30415e;
+      font-size:23px;
+      font-weight:900;
+      font-family:var(--font-cn);
+      transition:transform .12s ease, border-color .18s ease, box-shadow .18s ease, filter .18s ease, background .18s ease;
+      text-align:center;
+    }
+
+    .choice-btn:hover:not(:disabled){
+      transform:translateY(-1px);
+      filter:brightness(1.02);
+      border-color:#b9caf1;
+    }
+
+    .choice-btn.selected{
+      border-color:#4e8fff;
+      background:linear-gradient(180deg,#fafdff 0%, #e6f0ff 100%);
+      box-shadow:
+        0 0 0 5px rgba(78,143,255,.16),
+        inset 0 2px 0 rgba(255,255,255,.95),
+        0 8px 0 rgba(67,108,189,.16);
+      color:#244f9c;
+    }
+
+    .choice-btn.correct{
+      border-color:#37c66e;
+      background:linear-gradient(180deg,#f9fff9 0%, #e7ffef 100%);
+      box-shadow:
+        0 0 0 5px rgba(55,198,110,.16),
+        inset 0 2px 0 rgba(255,255,255,.95),
+        0 8px 0 rgba(40,145,83,.16);
+      color:#157546;
+    }
+
+    .choice-btn.wrong{
+      border-color:#ef6666;
+      background:linear-gradient(180deg,#fffafa 0%, #ffe8e8 100%);
+      box-shadow:
+        0 0 0 5px rgba(239,102,102,.14),
+        inset 0 2px 0 rgba(255,255,255,.95),
+        0 8px 0 rgba(179,72,72,.14);
+      color:#a32d2d;
+      animation:wrongShake .34s ease;
+    }
+
+    .choice-btn:disabled{
+      cursor:default;
+      opacity:1;
+    }
+
+    .battle-btn{
+      border:none;
+      cursor:pointer;
+      border-radius:18px;
+      font-family:var(--font-cn);
+      font-size:24px;
+      font-weight:900;
+      letter-spacing:1px;
+      color:white;
+      background:linear-gradient(180deg,#5a96f7 0%, #386bd2 100%);
+      border:5px solid #b7caef;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.35),
+        0 8px 0 rgba(45,79,150,.20);
+      transition:transform .12s ease, filter .2s ease, opacity .25s ease;
+      height:134px;       
+      min-height:134px;
+      align-self:start;
+    }
+
+    .battle-btn:hover:not(:disabled){
+      transform:translateY(-1px);
+      filter:brightness(1.04);
+    }
+
+    .battle-btn:active:not(:disabled){
+      transform:translateY(2px);
+    }
+
+    .battle-btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:grayscale(.08);
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      z-index:30;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(15,24,39,.48);
+      backdrop-filter:blur(4px);
+    }
+
+    .overlay.show{ display:flex; }
+
+    .overlay-card{
+      width:min(92%, 560px);
+      border-radius:28px;
+      padding:26px 24px 24px;
+      text-align:center;
+      color:#2b3957;
+      background:linear-gradient(180deg,#ffffff 0%, #edf3fb 100%);
+      border:5px solid #ced8e9;
+      box-shadow:
+        0 28px 60px rgba(0,0,0,.28),
+        inset 0 2px 0 rgba(255,255,255,.85);
+    }
+
+    .overlay-card h2{
+      margin:0 0 8px;
+      font-size:34px;
+      line-height:1.1;
+      font-weight:900;
+    }
+
+    .overlay-card p{
+      margin:10px 0;
+      color:#5e6d86;
+      font-size:18px;
+      font-weight:700;
+    }
+
+    .overlay-score{
+      margin:18px auto 22px;
+      width:fit-content;
+      padding:16px 22px;
+      border-radius:18px;
+      background:linear-gradient(180deg,#fef6d8 0%, #ffe38a 100%);
+      border:4px solid #efc34a;
+      font-size:30px;
+      font-weight:900;
+      color:#694e00;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+    }
+
+    .btn-row{
+      display:flex;
+      justify-content:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .primary-btn,.secondary-btn{
+      min-width:160px;
+      padding:14px 18px;
+      border-radius:18px;
+      cursor:pointer;
+      border:none;
+      font-size:18px;
+      font-weight:900;
+      font-family:var(--font-cn);
+      letter-spacing:.5px;
+      transition:transform .12s ease, filter .2s ease;
+    }
+
+    .primary-btn{
+      color:white;
+      background:linear-gradient(180deg,#5d99f8 0%, #3a6fd6 100%);
+      border:4px solid #c7d7f5;
+      box-shadow:inset 0 2px 0 rgba(255,255,255,.34), 0 8px 0 rgba(61,91,149,.24);
+    }
+
+    .secondary-btn{
+      color:#2d4060;
+      background:linear-gradient(180deg,#ffffff 0%, #edf2f9 100%);
+      border:4px solid #d0d9e7;
+      box-shadow:inset 0 2px 0 rgba(255,255,255,.75), 0 8px 0 rgba(84,102,135,.12);
+    }
+
+    .primary-btn:hover,.secondary-btn:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.03);
+    }
+
+    .loading-banner{
+      position:absolute;
+      left:50%;
+      top:46%;
+      transform:translate(-50%,-50%);
+      z-index:14;
+      display:none;
+      align-items:center;
+      gap:10px;
+      padding:12px 18px;
+      border-radius:999px;
+      background:rgba(255,255,255,.88);
+      border:3px solid rgba(58,79,112,.18);
+      color:#30425f;
+      font-size:16px;
+      font-weight:900;
+      box-shadow:0 12px 30px rgba(0,0,0,.18);
+    }
+
+    .loading-banner.show{ display:flex; }
+
+    .spinner{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:3px solid #c6d4ef;
+      border-top-color:#4a7ddd;
+      animation:spin .8s linear infinite;
+    }
+
+    .starter-select{
+      position:absolute;
+      inset:0;
+      z-index:25;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      background:linear-gradient(180deg, rgba(16,26,44,.38), rgba(16,26,44,.22));
+      backdrop-filter:blur(1px);
+    }
+
+    .starter-panel{
+      width:min(92%, 780px);
+      min-height:460px;
+      border-radius:28px;
+      padding:90px 24px 50px;
+      background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(240,246,255,.95));
+      border:4px solid rgba(51,74,115,.16);
+      box-shadow:0 24px 60px rgba(0,0,0,.22), inset 0 2px 0 rgba(255,255,255,.8);
+      text-align:center;
+    }
+
+    .starter-title{
+      font-size:30px;
+      font-weight:900;
+      color:#25395a;
+      margin-bottom:40px;
+    }
+
+    .starter-row{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:22px;
+    }
+
+    .starter-card{
+      position:relative;
+      border-radius:24px;
+      padding:20px 14px 18px;
+      background:linear-gradient(180deg,#ffffff 0%, #eef4fb 100%);
+      border:4px solid #d2dceb;
+      cursor:pointer;
+      overflow:hidden;
+      box-shadow:0 12px 26px rgba(31,47,76,.14), inset 0 2px 0 rgba(255,255,255,.9);
+      transition:transform .18s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+
+    .starter-card:hover{
+      transform:translateY(-6px);
+      border-color:#bdd0f6;
+      box-shadow:0 18px 30px rgba(31,47,76,.18), inset 0 2px 0 rgba(255,255,255,.95);
+    }
+
+    .starter-card.selected{
+      pointer-events:none;
+      border-color:#7ba6ff;
+      box-shadow:0 0 0 6px rgba(88,132,255,.16), 0 20px 36px rgba(31,47,76,.2);
+    }
+
+    .starter-ball{
+      width:88px;
+      height:88px;
+      margin:0 auto 16px;
+      border-radius:50%;
+      position:relative;
+      background:linear-gradient(180deg,#ff5a59 0 47%, #202530 47% 53%, #ffffff 53% 100%);
+      border:5px solid #253049;
+      box-shadow:0 12px 18px rgba(0,0,0,.18), inset 0 4px 0 rgba(255,255,255,.32);
+      animation:ballBob 2.2s ease-in-out infinite;
+    }
+
+    .starter-ball::before{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      background:white;
+      border:5px solid #253049;
+      transform:translate(-50%,-50%);
+      z-index:2;
+      box-shadow:0 0 0 3px rgba(255,255,255,.28);
+    }
+
+    .starter-ball::after{
+      display:none;
+    }
+
+    .starter-click{
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:.8px;
+      color:#607192;
+    }
+
+    .starter-reveal{
+      display:none;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:8px;
+      min-height:172px;
+    }
+
+    .starter-card.selected .starter-hidden{ display:none; }
+    .starter-card.selected .starter-reveal{ display:flex; }
+
+    .starter-reveal img{
+      width:130px;
+      height:130px;
+      object-fit:contain;
+      animation:starterReveal .52s cubic-bezier(.15,.78,.18,1);
+      filter:drop-shadow(0 14px 14px rgba(0,0,0,.18));
+    }
+
+    .starter-name{
+      font-size:20px;
+      font-weight:900;
+      color:#243a5d;
+    }
+
+    .enemy-hit{ animation:hitFlicker .42s ease; }
+    .player-hit{ animation:hitFlicker .42s ease; }
+    .attacking-player{ animation:playerAttack .45s ease; }
+    .attacking-enemy{ animation:enemyAttack .45s ease; }
+    .defeated{ animation:faintOut .8s ease forwards; }
+    .spawn{ animation:spawnIn .7s cubic-bezier(.18,.75,.16,1); }
+
+    @keyframes floatSoft{
+      0%,100%{ transform:translateY(0); }
+      50%{ transform:translateY(-3px); }
+    }
+
+    @keyframes bobEnemy{
+      0%,100%{ transform:translateY(0) scale(1); }
+      50%{ transform:translateY(-5px) scale(1.01); }
+    }
+
+    @keyframes bobPlayer{
+      0%,100%{ transform:translateY(0) scale(1); }
+      50%{ transform:translateY(-4px) scale(1.008); }
+    }
+
+    @keyframes hpShine{
+      0%{ transform:translateX(-120%); }
+      100%{ transform:translateX(150%); }
+    }
+
+    @keyframes floatDamage{
+      0%{ opacity:0; transform:translateY(12px) scale(.8); }
+      12%{ opacity:1; }
+      72%{ opacity:1; }
+      100%{ opacity:0; transform:translateY(-34px) scale(1.08); }
+    }
+
+    @keyframes wrongShake{
+      0%,100%{ transform:translateX(0); }
+      25%{ transform:translateX(-6px); }
+      50%{ transform:translateX(5px); }
+      75%{ transform:translateX(-3px); }
+    }
+
+    @keyframes screenFlash{
+      0%{ opacity:0; }
+      20%{ opacity:.72; }
+      100%{ opacity:0; }
+    }
+
+    @keyframes impactBurst{
+      0%{ opacity:0; transform:scale(.2); }
+      30%{ opacity:.95; }
+      100%{ opacity:0; transform:scale(5); }
+    }
+
+    @keyframes hitFlicker{
+      0%,100%{ filter:brightness(1); }
+      20%{ filter:brightness(2.2); }
+      40%{ filter:brightness(.75); }
+      65%{ filter:brightness(1.6); }
+    }
+
+    @keyframes playerAttack{
+      0%{ transform:translate(0,0) scale(1); }
+      35%{ transform:translate(34px,-8px) scale(1.04); }
+      100%{ transform:translate(0,0) scale(1); }
+    }
+
+    @keyframes enemyAttack{
+      0%{ transform:translate(0,0) scale(1); }
+      35%{ transform:translate(-30px,8px) scale(1.04); }
+      100%{ transform:translate(0,0) scale(1); }
+    }
+
+    @keyframes faintOut{
+      0%{ opacity:1; transform:translateY(0) scale(1); }
+      100%{ opacity:0; transform:translateY(28px) scale(.82); }
+    }
+
+    @keyframes spawnIn{
+      0%{ opacity:0; transform:translateY(-12px) scale(.85); filter:blur(8px); }
+      100%{ opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
+    }
+
+    @keyframes starterReveal{
+      0%{ opacity:0; transform:scale(.65) translateY(24px); }
+      100%{ opacity:1; transform:scale(1) translateY(0); }
+    }
+
+    @keyframes ballBob{
+      0%,100%{ transform:translateY(0); }
+      50%{ transform:translateY(-7px); }
+    }
+
+    @keyframes spin{
+      to{ transform:rotate(360deg); }
+    }
+
+    @media (max-width:980px){
+      .battle-frame{ min-height:820px; }
+      .status-card.enemy{ width:280px; }
+      .status-card.player{ width:320px; }
+      .monster.enemy{ width:200px; height:200px; right:76px; top:58px; }
+      .monster.player{ width:248px; height:248px; left:34px; }
+      .battle-ui-row{ grid-template-columns:1fr 148px; }
+      .choice-btn{ font-size:18px; min-height:58px; }
+    }
+
+    @media (max-width:760px){
+      body{ padding:12px; }
+      .battle-frame{
+        min-height:940px;
+        aspect-ratio:auto;
+      }
+      .scene{
+        grid-template-rows:58% 42%;
+      }
+      .arena{ min-height:470px; }
+      .status-card.enemy{
+        width:250px;
+        left:10px;
+        top:16px;
+      }
+      .status-card.player{
+        width:282px;
+        right:12px;
+        bottom:70px;
+      }
+      .monster.enemy{
+        width:176px;
+        height:176px;
+        right:34px;
+        top:100px;
+      }
+      .monster.player{
+        width:220px;
+        height:220px;
+        left:14px;
+        bottom:22px;
+      }
+      .enemy-platform{
+        right:26px;
+        top:132px;
+        width:210px;
+      }
+      .player-platform{
+        left:6px;
+        width:242px;
+      }
+      .dialogue-box{
+        font-size:16px;
+        min-height:48px;
+      }
+      .battle-ui-row{
+        grid-template-columns:1fr;
+      }
+      .battle-btn{
+        height: 76px;
+        min-height:76px;
+      }
+      .choices-wrap{
+        grid-template-columns:1fr;
+      }
+      .starter-row{
+        grid-template-columns:1fr;
+        gap:12px;
+      }
+      .starter-panel{
+        padding:20px 16px 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="title">
+      <span>宝可梦词语对战</span>
+    </div>
+
+    <div class="battle-frame" id="battleFrame">
+      <div class="screen-flash" id="screenFlash"></div>
+
+      <div class="loading-banner" id="loadingBanner">
+        <span class="spinner"></span>
+        <span id="loadingText">正在召唤宝可梦...</span>
+      </div>
+
+      <div class="starter-select" id="starterSelect">
+        <div class="starter-panel">
+          <div class="starter-title">请选择你的初始宝可梦。</div>
+          <div class="starter-row">
+            <div class="starter-card" data-starter-index="0">
+              <div class="starter-hidden">
+                <div class="starter-ball"></div>
+                <div class="starter-click">点击选择</div>
+              </div>
+              <div class="starter-reveal">
+                <img alt="starter" />
+                <div class="starter-name"></div>
+              </div>
+              <div class="starter-spark"></div>
+            </div>
+
+            <div class="starter-card" data-starter-index="1">
+              <div class="starter-hidden">
+                <div class="starter-ball"></div>
+                <div class="starter-click">点击选择</div>
+              </div>
+              <div class="starter-reveal">
+                <img alt="starter" />
+                <div class="starter-name"></div>
+              </div>
+              <div class="starter-spark"></div>
+            </div>
+
+            <div class="starter-card" data-starter-index="2">
+              <div class="starter-hidden">
+                <div class="starter-ball"></div>
+                <div class="starter-click">点击选择</div>
+              </div>
+              <div class="starter-reveal">
+                <img alt="starter" />
+                <div class="starter-name"></div>
+              </div>
+              <div class="starter-spark"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="overlay">
+        <div class="overlay-card">
+          <h2 id="overlayTitle">游戏结束！</h2>
+          <p id="overlayDesc">你的宝可梦失去战斗能力了。</p>
+          <div class="overlay-score" id="overlayScore">总分：0</div>
+          <div class="btn-row">
+            <button class="primary-btn" id="restartBtn">重新开始</button>
+            <button class="secondary-btn" id="closeOverlayBtn">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="scene">
+        <div class="arena" id="arena">
+          <div class="arena-sky"></div>
+          <div class="platform enemy-platform"></div>
+          <div class="platform player-platform"></div>
+
+          <div class="status-card enemy">
+            <div class="status-top">
+              <div class="status-name" id="enemyName">？？？</div>
+              <div class="status-level" id="enemyLevel">Lv.??</div>
+            </div>
+            <div class="hp-row">
+              <div class="hp-label">HP</div>
+              <div class="hp-track"><div class="hp-fill" id="enemyHpFill"></div></div>
+              <div class="hp-numbers" id="enemyHpText">0 / 0</div>
+            </div>
+          </div>
+
+          <div class="status-card player">
+            <div class="status-top">
+              <div class="status-name" id="playerName">？？？</div>
+              <div class="status-level" id="playerLevel">Lv.20</div>
+            </div>
+            <div class="hp-row">
+              <div class="hp-label">HP</div>
+              <div class="hp-track"><div class="hp-fill" id="playerHpFill"></div></div>
+              <div class="hp-numbers" id="playerHpText">150 / 150</div>
+            </div>
+          </div>
+
+          <div class="monster enemy loading" id="enemyMonster">
+            <img id="enemyImg" alt="宝可梦" />
+            <div class="fallback-avatar" id="enemyFallback">⚡</div>
+          </div>
+
+          <div class="monster player loading" id="playerMonster">
+            <img id="playerImg" alt="玩家宝可梦" />
+            <div class="fallback-avatar" id="playerFallback">🔥</div>
+          </div>
+
+          <div class="floating-text note" id="enemyFloat"></div>
+          <div class="floating-text bad" id="playerFloat"></div>
+          <div class="impact-ring" id="impactRing"></div>
+
+          <div class="floor-line"></div>
+        </div>
+
+        <div class="dialogue-panel">
+          <div class="dialogue-box" id="dialogueBox">请选择你的初始宝可梦！</div>
+
+          <div class="battle-ui-row">
+            <div class="choices-wrap" id="choicesWrap">
+              <button class="choice-btn" data-choice-index="0"></button>
+              <button class="choice-btn" data-choice-index="1"></button>
+              <button class="choice-btn" data-choice-index="2"></button>
+              <button class="choice-btn" data-choice-index="3"></button>
+            </div>
+
+            <button id="attackBtn" class="battle-btn" disabled>攻击</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const vocabulary = [
+        { english: "discover", chinese: "发掘" },
+        { english: "sincere", chinese: "真挚" },
+        { english: "little known", chinese: "鲜为人知" },
+        { english: "quota", chinese: "名额" },
+        { english: "link", chinese: "链接" },
+        { english: "tip", chinese: "窍门" },
+        { english: "supper", chinese: "宵夜" },
+        { english: "dawn", chinese: "黎明" },
+        { english: "narrate", chinese: "讲述" },
+        { english: "bake", chinese: "烘焙" },
+        { english: "craftsman", chinese: "匠人" },
+        { english: "tailor", chinese: "裁缝" }
+      ];
+
+      const starters = [
+        { id: 4, zhHans: "小火龙" },
+        { id: 1, zhHans: "妙蛙种子" },
+        { id: 7, zhHans: "杰尼龟" }
+      ];
+
+      const POKE_API_BASE = "https://pokeapi.co/api/v2/pokemon/";
+      const MAX_POKEMON_ID = 151;
+const pokemonZhMap = {
+  1: "妙蛙种子",
+  2: "妙蛙草",
+  3: "妙蛙花",
+  4: "小火龙",
+  5: "火恐龙",
+  6: "喷火龙",
+  7: "杰尼龟",
+  8: "卡咪龟",
+  9: "水箭龟",
+  10: "绿毛虫",
+  11: "铁甲蛹",
+  12: "巴大蝶",
+  13: "独角虫",
+  14: "铁壳蛹",
+  15: "大针蜂",
+  16: "波波",
+  17: "比比鸟",
+  18: "大比鸟",
+  19: "小拉达",
+  20: "拉达",
+  21: "烈雀",
+  22: "大嘴雀",
+  23: "阿柏蛇",
+  24: "阿柏怪",
+  25: "皮卡丘",
+  26: "雷丘",
+  27: "穿山鼠",
+  28: "穿山王",
+  29: "尼多兰",
+  30: "尼多娜",
+  31: "尼多后",
+  32: "尼多朗",
+  33: "尼多力诺",
+  34: "尼多王",
+  35: "皮皮",
+  36: "皮可西",
+  37: "六尾",
+  38: "九尾",
+  39: "胖丁",
+  40: "胖可丁",
+  41: "超音蝠",
+  42: "大嘴蝠",
+  43: "走路草",
+  44: "臭臭花",
+  45: "霸王花",
+  46: "派拉斯",
+  47: "派拉斯特",
+  48: "毛球",
+  49: "摩鲁蛾",
+  50: "地鼠",
+  51: "三地鼠",
+  52: "喵喵",
+  53: "猫老大",
+  54: "可达鸭",
+  55: "哥达鸭",
+  56: "猴怪",
+  57: "火暴猴",
+  58: "卡蒂狗",
+  59: "风速狗",
+  60: "蚊香蝌蚪",
+  61: "蚊香君",
+  62: "蚊香泳士",
+  63: "凯西",
+  64: "勇基拉",
+  65: "胡地",
+  66: "腕力",
+  67: "豪力",
+  68: "怪力",
+  69: "喇叭芽",
+  70: "口呆花",
+  71: "大食花",
+  72: "玛瑙水母",
+  73: "毒刺水母",
+  74: "小拳石",
+  75: "隆隆石",
+  76: "隆隆岩",
+  77: "小火马",
+  78: "烈焰马",
+  79: "呆呆兽",
+  80: "呆壳兽",
+  81: "小磁怪",
+  82: "三合一磁怪",
+  83: "大葱鸭",
+  84: "嘟嘟",
+  85: "嘟嘟利",
+  86: "小海狮",
+  87: "白海狮",
+  88: "臭泥",
+  89: "臭臭泥",
+  90: "大舌贝",
+  91: "刺甲贝",
+  92: "鬼斯",
+  93: "鬼斯通",
+  94: "耿鬼",
+  95: "大岩蛇",
+  96: "催眠貘",
+  97: "引梦貘人",
+  98: "大钳蟹",
+  99: "巨钳蟹",
+  100: "霹雳电球",
+  101: "顽皮雷弹",
+  102: "蛋蛋",
+  103: "椰蛋树",
+  104: "卡拉卡拉",
+  105: "嘎啦嘎啦",
+  106: "飞腿郎",
+  107: "快拳郎",
+  108: "大舌头",
+  109: "瓦斯弹",
+  110: "双弹瓦斯",
+  111: "独角犀牛",
+  112: "钻角犀兽",
+  113: "吉利蛋",
+  114: "蔓藤怪",
+  115: "袋兽",
+  116: "墨海马",
+  117: "海刺龙",
+  118: "角金鱼",
+  119: "金鱼王",
+  120: "海星星",
+  121: "宝石海星",
+  122: "魔墙人偶",
+  123: "飞天螳螂",
+  124: "迷唇姐",
+  125: "电击兽",
+  126: "鸭嘴火兽",
+  127: "凯罗斯",
+  128: "肯泰罗",
+  129: "鲤鱼王",
+  130: "暴鲤龙",
+  131: "拉普拉斯",
+  132: "百变怪",
+  133: "伊布",
+  134: "水伊布",
+  135: "雷伊布",
+  136: "火伊布",
+  137: "多边兽",
+  138: "菊石兽",
+  139: "多刺菊石兽",
+  140: "化石盔",
+  141: "镰刀盔",
+  142: "化石翼龙",
+  143: "卡比兽",
+  144: "急冻鸟",
+  145: "闪电鸟",
+  146: "火焰鸟",
+  147: "迷你龙",
+  148: "哈克龙",
+  149: "快龙",
+  150: "超梦",
+  151: "梦幻"
+};
+      const pokemonNameCache = new Map();
+
+      const state = {
+        score: 0,
+        busy: false,
+        starterChosen: false,
+        enemy: null,
+        currentQuestion: null,
+        selectedChoice: null,
+        usedQuestionIndices: [],
+        correctPositionHistory: [],
+        player: {
+          id: null,
+          name: "",
+          level: 20,
+          hp: 150,
+          maxHp: 150,
+          image: ""
+        }
+      };
+
+      const el = {
+        enemyName: document.getElementById("enemyName"),
+        enemyLevel: document.getElementById("enemyLevel"),
+        enemyHpFill: document.getElementById("enemyHpFill"),
+        enemyHpText: document.getElementById("enemyHpText"),
+
+        playerName: document.getElementById("playerName"),
+        playerLevel: document.getElementById("playerLevel"),
+        playerHpFill: document.getElementById("playerHpFill"),
+        playerHpText: document.getElementById("playerHpText"),
+
+        dialogueBox: document.getElementById("dialogueBox"),
+        attackBtn: document.getElementById("attackBtn"),
+
+        enemyMonster: document.getElementById("enemyMonster"),
+        playerMonster: document.getElementById("playerMonster"),
+        enemyImg: document.getElementById("enemyImg"),
+        playerImg: document.getElementById("playerImg"),
+        enemyFallback: document.getElementById("enemyFallback"),
+        playerFallback: document.getElementById("playerFallback"),
+
+        overlay: document.getElementById("overlay"),
+        overlayTitle: document.getElementById("overlayTitle"),
+        overlayDesc: document.getElementById("overlayDesc"),
+        overlayScore: document.getElementById("overlayScore"),
+        restartBtn: document.getElementById("restartBtn"),
+        closeOverlayBtn: document.getElementById("closeOverlayBtn"),
+
+        loadingBanner: document.getElementById("loadingBanner"),
+        loadingText: document.getElementById("loadingText"),
+        screenFlash: document.getElementById("screenFlash"),
+        enemyFloat: document.getElementById("enemyFloat"),
+        playerFloat: document.getElementById("playerFloat"),
+        impactRing: document.getElementById("impactRing"),
+        arena: document.getElementById("arena"),
+
+        starterSelect: document.getElementById("starterSelect"),
+        starterCards: Array.from(document.querySelectorAll(".starter-card")),
+        choiceButtons: Array.from(document.querySelectorAll(".choice-btn"))
+      };
+
+      function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      function shuffle(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function pickDifferentIndices(correctIndex, count) {
+        const pool = vocabulary
+          .map((_, index) => index)
+          .filter(index => index !== correctIndex);
+        return shuffle(pool).slice(0, Math.min(count, pool.length));
+      }
+
+      function toDisplayPokemonName(rawName) {
+        if (!rawName) return "神秘宝可梦";
+        return rawName
+          .split("-")
+          .map(part => part ? part.charAt(0).toUpperCase() + part.slice(1) : "")
+          .join(" ");
+      }
+
+      function getPokemonArtwork(data) {
+        return (
+          data?.sprites?.other?.["official-artwork"]?.front_default ||
+          data?.sprites?.other?.home?.front_default ||
+          data?.sprites?.other?.dream_world?.front_default ||
+          data?.sprites?.front_default ||
+          data?.sprites?.front_shiny ||
+          null
+        );
+      }
+
+      function setDialogue(html) {
+        el.dialogueBox.innerHTML = html;
+      }
+
+      function setLoading(isLoading, text = "正在召唤宝可梦...") {
+        el.loadingText.textContent = text;
+        el.loadingBanner.classList.toggle("show", isLoading);
+        const locked = isLoading || state.busy || !state.enemy || !state.starterChosen;
+        el.attackBtn.disabled = locked;
+        setChoicesDisabled(locked);
+      }
+
+      function updateHpBar(fillEl, textEl, current, max) {
+        const ratio = max > 0 ? clamp(current / max, 0, 1) : 0;
+        fillEl.style.width = `${ratio * 100}%`;
+        fillEl.classList.remove("mid", "low");
+        if (ratio <= 0.25) fillEl.classList.add("low");
+        else if (ratio <= 0.5) fillEl.classList.add("mid");
+        textEl.textContent = `${Math.max(0, current)} / ${max}`;
+      }
+
+      function updateAllHp() {
+        updateHpBar(el.enemyHpFill, el.enemyHpText, state.enemy?.hp || 0, state.enemy?.maxHp || 100);
+        updateHpBar(el.playerHpFill, el.playerHpText, state.player.hp, state.player.maxHp);
+      }
+
+      function positionFloatingText(target, type, text, x, y) {
+        target.textContent = text;
+        target.className = `floating-text ${type}`;
+        target.style.left = `${x}px`;
+        target.style.top = `${y}px`;
+        void target.offsetWidth;
+        target.classList.add("show");
+      }
+
+      function showDamageOnEnemy(text, type = "good") {
+        positionFloatingText(el.enemyFloat, type, text, el.arena.clientWidth - 250, 148);
+      }
+
+      function showDamageOnPlayer(text, type = "bad") {
+        positionFloatingText(el.playerFloat, type, text, 150, 300);
+      }
+
+      function triggerImpact(x, y) {
+        el.impactRing.style.left = `${x}px`;
+        el.impactRing.style.top = `${y}px`;
+        el.impactRing.classList.remove("show");
+        void el.impactRing.offsetWidth;
+        el.impactRing.classList.add("show");
+      }
+
+      function flashScreen() {
+        el.screenFlash.classList.remove("show");
+        void el.screenFlash.offsetWidth;
+        el.screenFlash.classList.add("show");
+      }
+
+      function setEnemyFallbackEmoji(name) {
+        const map = [
+          ["electric", "⚡"], ["fire", "🔥"], ["water", "💧"], ["grass", "🌿"], ["ice", "❄️"],
+          ["ghost", "👻"], ["fairy", "✨"], ["dragon", "🐉"], ["bug", "🐛"], ["rock", "🪨"],
+          ["ground", "🌍"], ["poison", "☠️"], ["steel", "⚙️"], ["flying", "🪽"], ["psychic", "🔮"]
+        ];
+        const lowered = String(name || "").toLowerCase();
+        const found = map.find(([key]) => lowered.includes(key));
+        el.enemyFallback.textContent = found ? found[1] : "⚔️";
+      }
+
+      function applyImageWithFallback(imgEl, monsterEl, url, fallbackEmoji = "⚔️") {
+        const fallbackNode = monsterEl.querySelector(".fallback-avatar");
+        if (fallbackNode) fallbackNode.textContent = fallbackEmoji;
+
+        if (!url) {
+          monsterEl.classList.remove("loading");
+          monsterEl.classList.add("use-fallback");
+          return;
+        }
+
+        monsterEl.classList.remove("use-fallback");
+        imgEl.onload = () => {
+          monsterEl.classList.remove("loading");
+          monsterEl.classList.remove("use-fallback");
+        };
+        imgEl.onerror = () => {
+          monsterEl.classList.remove("loading");
+          monsterEl.classList.add("use-fallback");
+        };
+        imgEl.src = url;
+      }
+
+      async function fetchPokemonById(id) {
+        const response = await fetch(`${POKE_API_BASE}${id}`);
+        if (!response.ok) throw new Error(`无法取得宝可梦资料：${response.status}`);
+        const data = await response.json();
+
+       let zhHansName = pokemonNameCache.get(id) || null;
+
+       if (!zhHansName) {
+         for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+           const speciesRes = await fetch(data.species.url);
+           if (!speciesRes.ok) throw new Error(`species fail: ${speciesRes.status}`);
+
+           const species = await speciesRes.json();
+           const names = Array.isArray(species.names) ? species.names : [];
+
+           zhHansName =
+            names.find(n => n.language?.name === "zh-Hans")?.name ||
+            names.find(n => n.language?.name === "zh-Hant")?.name ||
+            null;
+
+          if (zhHansName) {
+            zhHansName = zhHansName.replace(/\s+/g, "");
+            pokemonNameCache.set(id, zhHansName);
+           break;
+          }
+        } catch (error) {
+          if (attempt === 1) {
+             console.warn("抓取中文名失败，改用英文名：", id, error);
+          } else {
+            await wait(180);
+          }
+        }
+      }
+    }
+
+  const level = randomInt(6, 60);
+  const baseHp = data?.stats?.find(s => s.stat.name === "hp")?.base_stat || 70;
+  const maxHp = clamp(Math.round(baseHp * 1.3), 72, 180);
+
+  return {
+    id: data.id,
+    name: pokemonZhMap[id] || zhHansName || toDisplayPokemonName(data.name),
+    enName: toDisplayPokemonName(data.name),
+    image: getPokemonArtwork(data),
+    types: Array.isArray(data.types) ? data.types.map(t => t.type.name) : [],
+    level,
+    hp: maxHp,
+    maxHp,
+    correctHits: 0
+  };
+}
+
+      async function fetchRandomPokemon() {
+        const tried = new Set();
+        let lastError = null;
+
+        while (tried.size < 8) {
+          const id = randomInt(1, MAX_POKEMON_ID);
+          if (tried.has(id)) continue;
+          tried.add(id);
+          try {
+            const pokemon = await fetchPokemonById(id);
+            if (pokemon?.image || pokemon?.name) return pokemon;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        if (lastError) throw lastError;
+
+        return {
+          id: 0,
+          name: "神秘宝可梦",
+          enName: "Mystery",
+          image: null,
+          types: [],
+          level: randomInt(10, 50),
+          hp: 96,
+          maxHp: 96,
+          correctHits: 0
+        };
+      }
+
+      async function fetchStarterData(starter) {
+  try {
+    const pokemon = await fetchPokemonById(starter.id);
+    return {
+      id: starter.id,
+      name: pokemon.name || starter.zhHans,
+      image: pokemon.image,
+      level: 20,
+      hp: 150,
+      maxHp: 150
+    };
+  } catch {
+    return {
+      id: starter.id,
+      name: starter.zhHans,
+      image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${starter.id}.png`,
+      level: 20,
+      hp: 150,
+      maxHp: 150
+    };
+  }
+}
+
+      function resetChoicesVisual() {
+        el.choiceButtons.forEach(btn => {
+          btn.classList.remove("selected", "correct", "wrong");
+        });
+      }
+
+      function setChoicesDisabled(disabled) {
+        el.choiceButtons.forEach(btn => {
+          btn.disabled = disabled;
+        });
+      }
+
+      function buildQuestion() {
+        if (vocabulary.length === 0) return null;
+
+        if (state.usedQuestionIndices.length >= vocabulary.length) {
+          return null;
+        }
+
+        const unused = vocabulary
+          .map((_, index) => index)
+          .filter(index => !state.usedQuestionIndices.includes(index));
+
+        if (unused.length === 0) {
+           return null;
+        }
+
+        const questionIndex = unused[Math.floor(Math.random() * unused.length)];
+        state.usedQuestionIndices.push(questionIndex);
+
+        const question = vocabulary[questionIndex];
+        const distractorIndices = pickDifferentIndices(questionIndex, 3);
+        const options = [
+          { chinese: question.chinese, correct: true },
+          ...distractorIndices.map(index => ({
+            chinese: vocabulary[index].chinese,
+            correct: false
+          }))
+        ];
+
+        let shuffled = shuffle(options);
+
+        if (state.correctPositionHistory.length > 0) {
+          const lastPos = state.correctPositionHistory[state.correctPositionHistory.length - 1];
+          let currentPos = shuffled.findIndex(item => item.correct);
+          if (currentPos === lastPos) {
+            shuffled = shuffle(options);
+            currentPos = shuffled.findIndex(item => item.correct);
+            if (currentPos === lastPos) {
+              const swapIndex = currentPos === 0 ? 1 : 0;
+              [shuffled[currentPos], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[currentPos]];
+            }
+          }
+        }
+
+        const correctPos = shuffled.findIndex(item => item.correct);
+        state.correctPositionHistory.push(correctPos);
+        if (state.correctPositionHistory.length > 5) {
+          state.correctPositionHistory.shift();
+        }
+
+        return {
+          english: question.english,
+          chinese: question.chinese,
+          options: shuffled
+        };
+      }
+
+      function renderChoices() {
+        if (!state.currentQuestion) return;
+        resetChoicesVisual();
+        state.selectedChoice = null;
+
+        el.choiceButtons.forEach((btn, index) => {
+          const option = state.currentQuestion.options[index];
+          btn.textContent = option.chinese;
+          btn.dataset.correct = String(option.correct);
+          btn.disabled = false;
+        });
+      }
+
+      function selectChoice(index) {
+        if (state.busy || !state.enemy || !state.starterChosen) return;
+        state.selectedChoice = index;
+        el.choiceButtons.forEach((btn, idx) => {
+          btn.classList.toggle("selected", idx === index);
+        });
+      }
+
+      function renderPlayer() {
+        el.playerName.textContent = state.player.name || "？？？";
+        el.playerLevel.textContent = `Lv.${state.player.level}`;
+        el.playerMonster.classList.add("loading");
+        applyImageWithFallback(el.playerImg, el.playerMonster, state.player.image, "🔥");
+      }
+
+      function renderEnemy() {
+        if (!state.enemy) return;
+
+        el.enemyName.textContent = state.enemy.name;
+        el.enemyLevel.textContent = `Lv.${state.enemy.level}`;
+
+        const typeHint = state.enemy.types.join(" ");
+        setEnemyFallbackEmoji(typeHint);
+
+        el.enemyMonster.classList.add("loading");
+        el.enemyMonster.classList.remove("defeated", "spawn");
+        void el.enemyMonster.offsetWidth;
+        el.enemyMonster.classList.add("spawn");
+
+        applyImageWithFallback(
+          el.enemyImg,
+          el.enemyMonster,
+          state.enemy.image,
+          el.enemyFallback.textContent || "⚔️"
+        );
+        updateAllHp();
+      }
+
+      function renderQuestionMessage(prefix = `<span class="wild-name">${state.enemy.name}</span> 出现了！`) {
+        const q = state.currentQuestion;
+        setDialogue(`${prefix} 请选择 <span class="hint-pill">${q.english}</span> 的正确词语！`);
+      }
+
+      function calculateEnemyDamage() {
+        return Math.ceil(state.player.maxHp / 3);
+      }
+
+      async function playCorrectSequence() {
+        state.score += 10;
+
+        setDialogue(`回答正确！<span class="wild-name">${state.player.name}</span> 发动了攻击！`);
+        el.playerMonster.classList.remove("attacking-player");
+        void el.playerMonster.offsetWidth;
+        el.playerMonster.classList.add("attacking-player");
+
+        await wait(220);
+        flashScreen();
+        el.enemyMonster.classList.remove("enemy-hit");
+        void el.enemyMonster.offsetWidth;
+        el.enemyMonster.classList.add("enemy-hit");
+        triggerImpact(el.arena.clientWidth - 170, 180);
+        playHitSfx();
+
+function playHitSfx() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  const ctx = new AudioContextClass();
+
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc1.type = "square";
+  osc2.type = "triangle";
+
+  osc1.frequency.setValueAtTime(260, ctx.currentTime);
+  osc1.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.09);
+
+  osc2.frequency.setValueAtTime(180, ctx.currentTime);
+  osc2.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + 0.09);
+
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.11);
+
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc1.start();
+  osc2.start();
+  osc1.stop(ctx.currentTime + 0.11);
+  osc2.stop(ctx.currentTime + 0.11);
+
+  osc2.onended = () => ctx.close();
+}
+
+        state.enemy.correctHits += 1;
+
+        const oldHp = state.enemy.hp;
+        const nextHp = state.enemy.correctHits === 1 ? Math.floor(state.enemy.maxHp / 2) : 0;
+        const realDamage = oldHp - nextHp;
+        state.enemy.hp = nextHp;
+
+        updateAllHp();
+        showDamageOnEnemy(`-${realDamage}`, "good");
+
+        await wait(800);
+
+        if (state.enemy.hp <= 0) {
+
+          setDialogue(`<span class="wild-name">${state.enemy.name}</span> 倒下了！`);
+          el.enemyMonster.classList.add("defeated");
+          await wait(1200);
+
+          setDialogue(`你赢了！正在寻找下一只宝可梦……`);
+          await wait(900);
+          await loadNextEnemy();
+          return;
+        }
+
+        state.currentQuestion = buildQuestion();
+        if (!state.currentQuestion) {
+          await showVocabularyComplete();
+          return;
+        }
+
+        renderChoices();
+        setDialogue(`请选择 <span class="hint-pill">${state.currentQuestion.english}</span> 的正确词语！`);
+      }
+
+      async function playWrongSequence() {
+        const damage = calculateEnemyDamage();
+        const selectedBtn = state.selectedChoice !== null ? el.choiceButtons[state.selectedChoice] : null;
+
+        if (selectedBtn) {
+          selectedBtn.classList.remove("selected");
+          selectedBtn.classList.add("wrong");
+        }
+
+        const correctBtn = el.choiceButtons.find(btn => btn.dataset.correct === "true");
+        if (correctBtn) correctBtn.classList.add("correct");
+
+        setDialogue(`答错了！正确答案是 <span class="hint-pill" style="font-family:var(--font-cn)">${state.currentQuestion.chinese}</span>。<span class="wild-name">${state.enemy.name}</span> 反击了！`);
+
+        el.enemyMonster.classList.remove("attacking-enemy");
+        void el.enemyMonster.offsetWidth;
+        el.enemyMonster.classList.add("attacking-enemy");
+
+        await wait(750);
+        flashScreen();
+        el.playerMonster.classList.remove("player-hit");
+        void el.playerMonster.offsetWidth;
+        el.playerMonster.classList.add("player-hit");
+        triggerImpact(220, 350);
+
+        const realDamage = Math.min(damage, state.player.hp);
+        state.player.hp = Math.max(0, state.player.hp - damage);
+        updateAllHp();
+        showDamageOnPlayer(`-${realDamage}`, "bad");
+
+        await wait(1500);
+
+        if (state.player.hp <= 0) {
+          showGameOver();
+          return;
+        }
+
+        state.currentQuestion = buildQuestion();
+        if (!state.currentQuestion) {
+          await showVocabularyComplete();
+          return;
+        }
+
+        renderChoices();
+        setDialogue(`请选择 <span class="hint-pill">${state.currentQuestion.english}</span> 的正确词语，重新发动攻击！`);
+      }
+
+      async function handleAnswerSubmit() {
+        if (state.busy || !state.enemy || !state.starterChosen) return;
+
+        if (state.selectedChoice === null) {
+          setDialogue(`请先选择 <span class="hint-pill">${state.currentQuestion.english}</span> 的正确答案！`);
+          return;
+        }
+
+        state.busy = true;
+        el.attackBtn.disabled = true;
+        setChoicesDisabled(true);
+
+        const correct = el.choiceButtons[state.selectedChoice]?.dataset.correct === "true";
+
+        if (correct) {
+          el.choiceButtons[state.selectedChoice].classList.add("correct");
+          await playCorrectSequence();
+        } else {
+          await playWrongSequence();
+        }
+
+        if (state.player.hp > 0) {
+          state.busy = false;
+          el.attackBtn.disabled = false;
+          setChoicesDisabled(false);
+        }
+      }
+
+      async function loadNextEnemy() {
+        setLoading(true, "正在召唤宝可梦...");
+        el.enemyMonster.classList.add("loading");
+        el.enemyMonster.classList.remove("use-fallback", "defeated");
+
+        try {
+          const enemy = await fetchRandomPokemon();
+          state.enemy = enemy;
+          state.currentQuestion = buildQuestion();
+          if (!state.currentQuestion) {
+            await showVocabularyComplete();
+            return;
+          }
+
+          renderEnemy();
+          renderChoices();
+          updateAllHp();
+
+          await wait(250);
+          setDialogue(`<span class="wild-name">${enemy.name}</span> 出现了！`);
+          await wait(650);
+          renderQuestionMessage();
+        } catch (error) {
+          console.error(error);
+          state.enemy = {
+            id: 0,
+            name: "神秘宝可梦",
+            enName: "Mystery",
+            image: null,
+            types: [],
+            level: randomInt(15, 50),
+            hp: 90,
+            maxHp: 90,
+            correctHits: 0
+          };
+          state.currentQuestion = buildQuestion();
+          if (!state.currentQuestion) {
+            await showVocabularyComplete();
+            return;
+          }
+
+          renderEnemy();
+          renderChoices();
+          updateAllHp();
+          setDialogue(`网络稍慢，神秘宝可梦仍然出现了！请选择 <span class="hint-pill">${state.currentQuestion.english}</span> 的正确词语！`);
+        } finally {
+          setLoading(false);
+        }
+      }
+async function showVocabularyComplete() {
+  state.busy = true;
+  el.attackBtn.disabled = true;
+  setChoicesDisabled(true);
+
+  setDialogue("恭喜！你已完成全部题目！");
+  await wait(800);
+
+  el.enemyMonster.classList.add("defeated");
+  await wait(900);
+
+  setDialogue(`<span class="wild-name">${state.player.name}</span> 游戏结束！`);
+  await wait(900);
+
+  el.overlayTitle.textContent = "游戏结束！";
+  el.overlayDesc.textContent = "所有题目都已经完成。";
+  el.overlayScore.textContent = `总分：${state.score}`;
+  el.overlay.classList.add("show");
+}
+
+      function showGameOver() {
+        state.busy = true;
+        el.attackBtn.disabled = true;
+        setChoicesDisabled(true);
+
+        setDialogue(`<span class="wild-name">${state.player.name}</span> 失去战斗能力了……`);
+        el.overlayTitle.textContent = "游戏结束！";
+        el.overlayDesc.textContent = `所有题目都已经完成。`;
+        el.overlayScore.textContent = `总分：${state.score}`;
+        el.overlay.classList.add("show");
+      }
+
+      async function chooseStarter(index) {
+        if (state.busy || state.starterChosen) return;
+        state.busy = true;
+
+        const card = el.starterCards[index];
+        const starter = starters[index];
+        const revealImg = card.querySelector(".starter-reveal img");
+        const revealName = card.querySelector(".starter-name");
+
+        const starterData = await fetchStarterData(starter);
+
+        revealImg.src = starterData.image || "";
+        revealName.textContent = starterData.name;
+        card.classList.add("selected");
+
+        setDialogue(`宝贝球打开了！你选择了 <span class="hint-pill" style="font-family:var(--font-cn)">${starterData.name}</span>！`);
+        await wait(850);
+
+        state.player.id = starterData.id;
+        state.player.name = starterData.name;
+        state.player.image = starterData.image;
+        state.player.level = 20;
+        state.player.hp = state.player.maxHp;
+
+        state.starterChosen = true;
+        renderPlayer();
+        updateAllHp();
+
+        await wait(550);
+        el.starterSelect.style.display = "none";
+
+        setDialogue(`<span class="wild-name">${state.player.name}</span>，就决定是你了！`);
+        await wait(1000);
+
+        state.busy = false;
+        await startGame();
+      }
+
+      async function startGame() {
+        state.score = 0;
+        state.enemy = null;
+        state.currentQuestion = null;
+        state.selectedChoice = null;
+        state.usedQuestionIndices = [];
+        state.correctPositionHistory = [];
+        state.player.hp = state.player.maxHp;
+
+        el.overlay.classList.remove("show");
+        updateAllHp();
+
+        setDialogue("训练家准备好了！正在进入草地战斗场景……");
+        await wait(500);
+        await loadNextEnemy();
+      }
+
+      function bindEvents() {
+        el.attackBtn.addEventListener("click", handleAnswerSubmit);
+
+el.restartBtn.addEventListener("click", () => {
+  el.overlay.classList.remove("show");
+
+  state.score = 0;
+  state.busy = false;
+  state.starterChosen = false;
+  state.enemy = null;
+  state.currentQuestion = null;
+  state.selectedChoice = null;
+  state.usedQuestionIndices = [];
+  state.correctPositionHistory = [];
+
+  state.player = {
+    id: null,
+    name: "",
+    level: 20,
+    hp: 150,
+    maxHp: 150,
+    image: ""
+  };
+
+  el.playerName.textContent = "？？？";
+  el.playerLevel.textContent = "Lv.20";
+  el.enemyName.textContent = "？？？";
+  el.enemyLevel.textContent = "Lv.??";
+
+  el.playerImg.src = "";
+  el.enemyImg.src = "";
+  el.playerMonster.classList.add("loading");
+  el.enemyMonster.classList.add("loading");
+  el.playerMonster.classList.remove("use-fallback", "defeated", "spawn");
+  el.enemyMonster.classList.remove("use-fallback", "defeated", "spawn");
+
+  el.starterCards.forEach(card => {
+    card.classList.remove("selected");
+    const revealImg = card.querySelector(".starter-reveal img");
+    const revealName = card.querySelector(".starter-name");
+    if (revealImg) revealImg.src = "";
+    if (revealName) revealName.textContent = "";
+  });
+
+  resetChoicesVisual();
+  setChoicesDisabled(true);
+  updateAllHp();
+
+  setDialogue("请选择你的宝可梦开始冒险！");
+  el.starterSelect.style.display = "flex";
+});
+
+        el.closeOverlayBtn.addEventListener("click", () => {
+          el.overlay.classList.remove("show");
+        });
+
+        el.overlay.addEventListener("click", event => {
+          if (event.target === el.overlay) {
+            el.overlay.classList.remove("show");
+          }
+        });
+
+        el.starterCards.forEach((card, index) => {
+          card.addEventListener("click", () => chooseStarter(index));
+        });
+
+        el.choiceButtons.forEach((btn, index) => {
+          btn.addEventListener("click", () => selectChoice(index));
+        });
+      }
+
+      function init() {
+        bindEvents();
+        updateAllHp();
+        renderPlayer();
+        setChoicesDisabled(true);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
