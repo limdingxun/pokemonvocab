@@ -1480,6 +1480,44 @@
         min-height:480px;
       }
     }
+
+    /* D – Hit white silhouette flash */
+    @keyframes hitWhiteFlash{
+      0%{ filter:brightness(1) saturate(1); }
+      15%{ filter:brightness(10) saturate(0) invert(1); }
+      35%{ filter:brightness(8) saturate(0) invert(1); }
+      60%{ filter:brightness(1.4) saturate(.6); }
+      100%{ filter:brightness(1) saturate(1); }
+    }
+    .enemy-hit{ animation:hitWhiteFlash .45s ease !important; }
+    .player-hit{ animation:hitWhiteFlash .45s ease !important; }
+
+    /* B – Arena shake */
+    @keyframes arenaShake{
+      0%,100%{ transform:translate(0,0); }
+      15%{ transform:translate(-7px, 3px); }
+      30%{ transform:translate(6px, -4px); }
+      45%{ transform:translate(-5px, 2px); }
+      60%{ transform:translate(4px, -2px); }
+      75%{ transform:translate(-2px, 1px); }
+    }
+    .arena-shake{ animation:arenaShake .38s ease; }
+
+    /* A – Particle burst */
+    .particle{
+      position:absolute;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      pointer-events:none;
+      z-index:20;
+      animation:particleFly .55s ease-out forwards;
+    }
+    @keyframes particleFly{
+      0%{ opacity:1; transform:translate(0,0) scale(1); }
+      100%{ opacity:0; transform:translate(var(--tx),var(--ty)) scale(.3); }
+    }
+
   </style>
 </head>
 <body>
@@ -2352,13 +2390,17 @@
           el.playerLevel.textContent = `Lv.${state.player.level}`;
           updateXpBar();
 
+          // Full HP restore on level up
+          state.player.hp = state.player.maxHp;
+          updateAllHp();
+
           const shouldEvolve = EVO_LEVELS.includes(state.player.level) && state.player.evoStage < 2;
           if (shouldEvolve) {
-            setDialogue(`<span class="wild-name">${state.player.name}</span> 升到了 Lv.${state.player.level}！`);
+            setDialogue(`<span class="wild-name">${state.player.name}</span> 升到了 Lv.${state.player.level}！HP全回复！`);
             await wait(800);
             await triggerEvolution();
           } else {
-            setDialogue(`<span class="wild-name">${state.player.name}</span> 升到了 Lv.${state.player.level}！`);
+            setDialogue(`<span class="wild-name">${state.player.name}</span> 升到了 Lv.${state.player.level}！HP全回复！`);
             await wait(900);
           }
           return true;
@@ -2712,6 +2754,36 @@
         osc2.onended = () => ctx.close();
       }
 
+      // B – Arena shake
+      function shakeArena() {
+        el.arena.classList.remove("arena-shake");
+        void el.arena.offsetWidth;
+        el.arena.classList.add("arena-shake");
+        el.arena.addEventListener("animationend", () => el.arena.classList.remove("arena-shake"), { once: true });
+      }
+
+      // A – Particle burst
+      function spawnParticles(x, y, colors) {
+        const count = 10;
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement("div");
+          p.className = "particle";
+          const angle = (i / count) * 360 + Math.random() * 20;
+          const dist = 48 + Math.random() * 52;
+          const rad = angle * Math.PI / 180;
+          const tx = Math.round(Math.cos(rad) * dist);
+          const ty = Math.round(Math.sin(rad) * dist);
+          p.style.setProperty("--tx", tx + "px");
+          p.style.setProperty("--ty", ty + "px");
+          p.style.left = x + "px";
+          p.style.top = y + "px";
+          p.style.background = colors[i % colors.length];
+          p.style.animationDelay = (Math.random() * 60) + "ms";
+          el.arena.appendChild(p);
+          p.addEventListener("animationend", () => p.remove(), { once: true });
+        }
+      }
+
       async function playCorrectSequence() {
         state.score += 10;
 
@@ -2722,10 +2794,12 @@
 
         await wait(220);
         flashScreen();
+        shakeArena();
         el.enemyMonster.classList.remove("enemy-hit");
         void el.enemyMonster.offsetWidth;
         el.enemyMonster.classList.add("enemy-hit");
         triggerImpact(el.arena.clientWidth - 170, 180);
+        spawnParticles(el.arena.clientWidth - 170, 160, ["#ffe03a","#ff6b35","#fff","#ffb347","#ff4500"]);
         playHitSfx();
 
         state.enemy.correctHits += 1;
@@ -2786,10 +2860,12 @@
 
         await wait(750);
         flashScreen();
+        shakeArena();
         el.playerMonster.classList.remove("player-hit");
         void el.playerMonster.offsetWidth;
         el.playerMonster.classList.add("player-hit");
         triggerImpact(220, 350);
+        spawnParticles(220, 330, ["#e040fb","#7c4dff","#fff","#40c4ff","#e91e63"]);
         playHitSfx();
 
         const realDamage = Math.min(damage, state.player.hp);
