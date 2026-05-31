@@ -1659,9 +1659,7 @@
     (() => {
       "use strict";
 
-      const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTsgGQ6i79mqeCkxHTg9JYvxavbEsySTnf-5CF0MB2Uctbv8eCUg5m1G83fPnLmqYQ_cPbrSrntYNow/pub?output=csv";
-
-      let vocabulary = [
+      const vocabulary = [
         { word: "疲惫", meaning: "非常疲劳，精力耗尽", sentence: "走了一整天的路，他感到__________，几乎站不住脚。" },
         { word: "犹豫", meaning: "拿不定主意，迟疑不决", sentence: "面对两个选择，她__________了很久，不知道该怎么办。" },
         { word: "不分青红皂白", meaning: "不问清楚情况就处理", sentence: "他__________地把所有人都骂了一顿，根本没听解释。" },
@@ -3123,63 +3121,14 @@
         });
       }
 
-      function parseCSV(text) {
-        const lines = text.trim().split(/\r?\n/);
-        const result = [];
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          // Parse CSV fields (handles quoted fields with commas)
-          const fields = [];
-          let current = "";
-          let inQuotes = false;
-          for (let j = 0; j < line.length; j++) {
-            const ch = line[j];
-            if (ch === '"') {
-              if (inQuotes && line[j+1] === '"') { current += '"'; j++; }
-              else { inQuotes = !inQuotes; }
-            } else if (ch === ',' && !inQuotes) {
-              fields.push(current); current = "";
-            } else {
-              current += ch;
-            }
-          }
-          fields.push(current);
-          if (fields.length >= 3 && fields[0].trim()) {
-            result.push({ word: fields[0].trim(), meaning: fields[1].trim(), sentence: fields[2].trim() });
-          }
-        }
-        return result;
-      }
-
-      async function loadVocabularyFromSheet() {
-        try {
-          setDialogue("正在读取题库……");
-          const res = await fetch(SHEET_CSV_URL);
-          if (!res.ok) throw new Error("网络错误");
-          const text = await res.text();
-          const parsed = parseCSV(text);
-          if (parsed.length > 0) {
-            vocabulary = parsed;
-            setDialogue(\`题库已更新（共 \${vocabulary.length} 题）！PRESS START 开始游戏！\`);
-          } else {
-            throw new Error("题库为空");
-          }
-        } catch (e) {
-          // Fall back to built-in vocabulary silently
-          setDialogue("PRESS START 开始游戏！");
-        }
-      }
-
-      async function init() {
+      function init() {
         bindEvents();
         updateAllHp();
         renderPlayer();
         setChoicesDisabled(true);
         el.startScreen.classList.add("show");
         el.starterSelect.style.display = "none";
-        setDialogue("正在读取题库……");
-        await loadVocabularyFromSheet();
+        setDialogue("PRESS START 开始游戏！");
       }
 
       init();
